@@ -1,0 +1,41 @@
+name: Deploy Patroni to Linode Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+        env:
+          TF_VAR_linode_token: ${{ secrets.LINODE_API_TOKEN }}
+
+      - name: Set Up Kubeconfig
+        run: echo "$(terraform output -raw kubeconfig)" > ~/.kube/config
+        working-directory: terraform
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+
+      - name: Install Helm Charts
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm install etcd bitnami/etcd --set auth.rbac.enabled=false --set replicaCount=1
+          helm install patroni bitnami/postgresql-ha --set postgresql.replicas=2 --set postgresql.persistentVolume.size=1Gi --set postgresql.postgresqlPassword="supersecurepassword" --set postgresql.replicationPassword="replicapassword" --set postgresql.readReplicas.enabled=true --set postgresql.readReplicas.count=1 --set global.postgresql.servicePort=5432
