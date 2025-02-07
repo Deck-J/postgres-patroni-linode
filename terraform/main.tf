@@ -1,4 +1,4 @@
-provider "linode" {
+provider ""linode/linode"" {
   token = var.LINODE_TOKEN
 }
 
