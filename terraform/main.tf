@@ -1,5 +1,5 @@
 provider "linode" {
-  token = var.linode_token
+  token = var.LINODE_TOKEN
 }
 
 resource "linode_lke_cluster" "patroni_cluster" {
