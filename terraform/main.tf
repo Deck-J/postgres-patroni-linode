@@ -1,3 +1,14 @@
+terraform {
+  required_version = ">= 0.13"
+
+  required_providers {
+    linode = {
+      source  = "linode/linode"
+      version = "~> 1.29.0"
+    }
+  }
+}
+
 provider "linode" {
   token = var.LINODE_TOKEN
 }
@@ -13,6 +24,6 @@ resource "linode_lke_cluster" "patroni_cluster" {
 }
 
 output "kubeconfig" {
-  value = linode_lke_cluster.patroni_cluster.kubeconfig
+  value     = linode_lke_cluster.patroni_cluster.kubeconfig
   sensitive = true
 }
