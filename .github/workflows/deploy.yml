@@ -24,7 +24,7 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: terraform
         env:
-          TF_VAR_linode_token: ${{ secrets.LINODE_TOKEN }}
+          LINODE_API_TOKEN: ${{ secrets.LINODE_API_TOKEN }}
 
       - name: Set Up Kubeconfig
         run: echo "$(terraform output -raw kubeconfig)" > ~/.kube/config
