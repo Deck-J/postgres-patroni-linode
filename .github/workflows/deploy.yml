@@ -21,13 +21,16 @@ jobs:
         working-directory: terraform
 
       - name: Terraform Apply
+        env:
+          TF_VAR_github_token: ${{ secrets.LINODE_TOKEN }}
         run: terraform apply -auto-approve
         working-directory: terraform
-    env:
-        TF_VAR_github_token: ${{ secrets.LINODE_TOKEN }}
 
       - name: Set Up Kubeconfig
-        run: echo "$(terraform output -raw kubeconfig)" > ~/.kube/config
+        run: |
+          mkdir -p ~/.kube
+          terraform output -raw kubeconfig > ~/.kube/config
+          chmod 600 ~/.kube/config
         working-directory: terraform
 
       - name: Setup Helm
@@ -36,6 +39,35 @@ jobs:
       - name: Install Helm Charts
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add zalando https://opensource.zalando.com/postgres-operator/charts/postgres-operator
           helm repo update
+
+          # Install ETCD
           helm install etcd bitnami/etcd --set auth.rbac.enabled=false --set replicaCount=1
-          helm install patroni bitnami/postgresql-ha --set postgresql.replicas=2 --set postgresql.persistentVolume.size=1Gi --set postgresql.postgresqlPassword="supersecurepassword" --set postgresql.replicationPassword="replicapassword" --set postgresql.readReplicas.enabled=true --set postgresql.readReplicas.count=1 --set global.postgresql.servicePort=5432
+
+          # Install Patroni using Zalando PostgreSQL Operator
+          helm install postgres-operator zalando/postgres-operator
+          helm install postgres-operator-ui zalando/postgres-operator-ui
+          
+          # Create a PostgreSQL cluster using Zalando Patroni
+          cat <<EOF | kubectl apply -f -
+          apiVersion: "acid.zalan.do/v1"
+          kind: postgresql
+          metadata:
+            name: patroni-cluster
+          spec:
+            teamId: "patroni"
+            volume:
+              size: "1Gi"
+            numberOfInstances: 2
+            users:
+              admin:
+                - superuser
+                - createdb
+              replication:
+                - replication
+            databases:
+              patronidb: admin
+            postgresql:
+              version: "14"
+          
