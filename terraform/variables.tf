@@ -1,5 +1,5 @@
 variable "LINODE_TOKEN" {
-  description = "Linode API Token"
+  description = "GitHub Token for Terraform"
   type        = string
   sensitive   = true
 }
