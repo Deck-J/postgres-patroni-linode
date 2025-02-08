@@ -10,7 +10,7 @@ terraform {
 }
 
 provider "linode" {
-  token = var.LINODE_TOKEN
+  token = ${{ secrets.LINODE_TOKEN }}
 }
 
 resource "linode_lke_cluster" "patroni_cluster" {
